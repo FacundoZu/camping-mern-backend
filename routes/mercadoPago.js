@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createPreference, handleWebhook } from '../controllers/mercadoPago.js';
+import { createPreference, handleWebhook, getPaymentStatus } from '../controllers/mercadoPago.js';
 import { tempReservation } from '../controllers/reservation.js';
 
 export const mercadoPagoRouter = Router();
@@ -7,6 +7,7 @@ export const mercadoPagoRouter = Router();
 mercadoPagoRouter.post('/create-temp-reservation', tempReservation);
 mercadoPagoRouter.post('/create-preference', createPreference);
 mercadoPagoRouter.all('/webhook', handleWebhook);
+mercadoPagoRouter.get('/status/:tempId', getPaymentStatus);
 
 // Rutas de redirección después del pago
 mercadoPagoRouter.get('/success', (req, res) => {

@@ -29,7 +29,7 @@ export const tempReservation = async (req, res) => {
         expiresAt: { $gt: new Date() }
       })
     ]);
-
+    console.log(reservasExistentes, tempReservas)
     if (reservasExistentes.length > 0 || tempReservas.length > 0) {
       return res.status(400).json({
         status: "error",
