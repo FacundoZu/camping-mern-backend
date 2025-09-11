@@ -29,7 +29,6 @@ export const tempReservation = async (req, res) => {
         expiresAt: { $gt: new Date() }
       })
     ]);
-    console.log(reservasExistentes, tempReservas)
     if (reservasExistentes.length > 0 || tempReservas.length > 0) {
       return res.status(400).json({
         status: "error",
@@ -63,7 +62,6 @@ export const tempReservation = async (req, res) => {
 export const confirmReservation = async (req, res) => {
   try {
     const { tempId, paymentId } = req.body;
-    console.log(tempId, paymentId)
 
     // Verificar si ya existe una reserva confirmada con este paymentId
     const reservaExistente = await Reservation.findOne({ paymentId });
@@ -118,7 +116,6 @@ export const confirmReservation = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al confirmar reserva:', error);
     res.status(500).json({
       status: "error",
       message: 'Error al confirmar reserva',
@@ -155,7 +152,6 @@ const getReservations = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
     return res.status(500).json({
       mensaje: 'Hubo un error al obtener las reservas.',
     });
@@ -181,7 +177,6 @@ const getAllReservationsCabin = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
     return res.status(500).json({
       mensaje: 'Hubo un error al obtener las reservas.',
     });
@@ -196,7 +191,6 @@ const getReservationsUser = async (req, res) => {
       .exec();
     res.status(200).json({ success: true, reservas });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ success: false, message: 'Error al obtener reservas' });
   }
 };
@@ -206,7 +200,6 @@ const getAllReservations = async (req, res) => {
     const reservations = await Reservation.find().populate('cabaniaId');
     res.status(200).json({ reservations });
   } catch (error) {
-    console.error("Error al obtener las reservas:", error);
     res.status(500).json({ message: "Error al obtener las reservas" });
   }
 };

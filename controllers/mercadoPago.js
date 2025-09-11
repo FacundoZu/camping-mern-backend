@@ -7,23 +7,24 @@ const client = config;
 
 export const createPreference = async (req, res) => {
   try {
-    const { items, payer, back_urls, external_reference } = req.body;
+    const { items, payer, external_reference } = req.body;
 
-    if (!items || !payer || !back_urls) {
+    if (!items || !payer) {
       return res.status(400).json({ status: "error", message: 'Datos incompletos' });
     }
 
     const preference = {
       items,
       payer,
-      back_urls,
-      notification_url: `${process.env.BASE_URL}/MP/webhook`,
-      binary_mode: true,
+      back_urls: {
+        success: `${process.env.FRONT_BASE_URL}/reserva-exitosa`,
+        failure: `${process.env.FRONT_BASE_URL}/reserva-fallida`,
+        pending: `${process.env.FRONT_BASE_URL}/reserva-pendiente`
+      },
+      //notification_url: `${process.env.BASE_URL}/MP/webhook`,
+      auto_return: "approved",
+      redirectMode: "modal",
       external_reference,
-      payment_methods: {
-        excluded_payment_types: [{ id: "atm" }],
-        installments: 12
-      }
     };
 
     const preferenceClient = new Preference(client);
@@ -31,13 +32,10 @@ export const createPreference = async (req, res) => {
 
     res.json({
       status: "success",
-      init_point: process.env.NODE_ENV === "production"
-        ? response.init_point
-        : response.sandbox_init_point,
+      init_point: response.init_point
     });
 
   } catch (error) {
-    console.error('Error al crear preferencia de pago:', error);
     res.status(500).json({ status: "error", message: 'Error al procesar el pago' });
   }
 };
@@ -81,7 +79,6 @@ export const handleWebhook = async (req, res) => {
 
     res.status(200).send('OK');
   } catch (error) {
-    console.error('Error en webhook:', error);
     res.status(500).send('Error');
   }
 };
@@ -103,7 +100,6 @@ export const getPaymentStatus = async (req, res) => {
     res.json({ status: "success", estado: "rejected" });
 
   } catch (error) {
-    console.error("Error obteniendo estado del pago:", error);
     res.status(500).json({ status: "error", message: "Error en el servidor" });
   }
 };
