@@ -6,6 +6,7 @@ import { upload } from "../middlewares/upload.js";
 export const activityRouter = Router();
 
 activityRouter.post('/createActivity', authRequire, activityController.createActivity);
+activityRouter.get('/getActivities', activityController.getActivities);
 activityRouter.get('/getAllActivities', activityController.getAllActivities);
 activityRouter.get('/getActivity/:id', activityController.getActivityById);
 activityRouter.put('/updateActivity/:id', authRequire, activityController.updateActivity);

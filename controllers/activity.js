@@ -30,6 +30,18 @@ const createActivity = async (req, res) => {
     }
 };
 
+const getActivities = async (req, res) => {
+    try {
+        const activities = await Actividad.find({ estado: 'Habilitado' });
+        return res.status(200).json({
+            status: 'success',
+            activities
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, mensaje: 'Error al obtener las actividades', error });
+    }
+};
+
 const getAllActivities = async (req, res) => {
     try {
         const activities = await Actividad.find();
@@ -179,6 +191,7 @@ export const changeState = async (req, res) => {
 
 export default {
     createActivity,
+    getActivities,
     getAllActivities,
     getActivityById,
     updateActivity,

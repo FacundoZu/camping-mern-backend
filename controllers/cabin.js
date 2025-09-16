@@ -61,6 +61,89 @@ const getCabins = async (req, res) => {
     }
 };
 
+const getActiveCabins = async (req, res) => {
+    try {
+        const { checkIn, checkOut, cantidadPersonas, cantidadHabitaciones, cantidadBaños, servicios } = req.query;
+        const filtros = {};
+
+        // Conversión a números
+        if (cantidadPersonas && cantidadPersonas !== "0") {
+            filtros.cantidadPersonas = { $gte: Number(cantidadPersonas) };
+        }
+        if (cantidadHabitaciones && cantidadHabitaciones !== "0") {
+            filtros.cantidadHabitaciones = { $gte: Number(cantidadHabitaciones) };
+        }
+        if (cantidadBaños && cantidadBaños !== "0") {
+            filtros.cantidadBaños = { $gte: Number(cantidadBaños) };
+        }
+
+        filtros.estado = "Disponible";
+
+        // Filtro de servicios
+        if (servicios) {
+            const serviciosArray = servicios.split(",");
+            filtros.servicios = {
+                $all: serviciosArray.map(id => new mongoose.Types.ObjectId(id.trim()))
+            };
+        }
+
+        // Manejo de fechas
+        const parseDate = (dateString) => parse(dateString, "dd-MM-yyyy", new Date());
+
+        if (checkIn && checkOut) {
+            const fechaInicioDate = parseDate(checkIn);
+            const fechaFinalDate = parseDate(checkOut);
+
+            filtros.reservas = {
+                $not: {
+                    $elemMatch: {
+                        fechaInicio: { $lte: fechaFinalDate },
+                        fechaFinal: { $gte: fechaInicioDate }
+                    }
+                }
+            };
+        }
+        let cabins;
+
+        if (cantidadPersonas && cantidadPersonas !== "0") {
+            cabins = await Cabin.aggregate([
+                { $match: filtros },
+                {
+                    $addFields: {
+                        prioridad: {
+                            $cond: [
+                                { $eq: ["$cantidadPersonas", Number(cantidadPersonas)] },
+                                0,
+                                1
+                            ]
+                        }
+                    }
+                },
+                { $sort: { prioridad: 1, cantidadPersonas: 1 } }
+            ]);
+
+            // populate después de aggregate
+            cabins = await Cabin.populate(cabins, ["servicios", "reservas"]);
+        } else {
+            cabins = await Cabin.find(filtros)
+                .populate("servicios")
+                .populate("reservas");
+        }
+
+        return res.status(200).json({
+            success: true,
+            cabins
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error al obtener las cabañas",
+            error: error.message
+        });
+    }
+};
+
+
 const getServices = async (req, res) => {
     try {
         // 1. Traer todos los servicios disponibles
@@ -224,7 +307,7 @@ const updateCabin = async (req, res) => {
     }
 };
 
-export const getOpcionesCabania = async (req, res) => {
+const getOpcionesCabania = async (req, res) => {
     try {
         const modelos = Cabin.getModelos();
         const disponibilidades = Cabin.getDisponibilidades();
@@ -236,7 +319,7 @@ export const getOpcionesCabania = async (req, res) => {
     }
 };
 
-export const changeState = async (req, res) => {
+const changeState = async (req, res) => {
     try {
         const { id } = req.params;
         const cabin = await Cabin.findById(id);
@@ -257,6 +340,7 @@ export const changeState = async (req, res) => {
 export default {
     getCabins,
     getServices,
+    getActiveCabins,
     createCabin,
     uploadImageCabin,
     getCabin,
