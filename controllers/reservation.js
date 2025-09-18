@@ -9,7 +9,7 @@ const client = new MercadoPagoConfig({
 
 export const tempReservation = async (req, res) => {
   try {
-    const { cabaniaId, fechaInicio, fechaFinal, precioTotal, guestInfo } = req.body;
+    const { cabaniaId, fechaInicio, fechaFinal, precioTotal, guestInfo, usuarioId } = req.body;
 
     // Verificar disponibilidad
     const [reservasExistentes, tempReservas] = await Promise.all([
@@ -42,7 +42,8 @@ export const tempReservation = async (req, res) => {
       fechaInicio,
       fechaFinal,
       precioTotal,
-      guestInfo
+      guestInfo,
+      usuarioId
     });
 
     res.status(200).json({
@@ -59,10 +60,9 @@ export const tempReservation = async (req, res) => {
   }
 };
 
-export const confirmReservation = async (req, res) => {
+const confirmReservation = async (req, res) => {
   try {
     const { tempId, paymentId } = req.body;
-
     // Verificar si ya existe una reserva confirmada con este paymentId
     const reservaExistente = await Reservation.findOne({ paymentId });
     if (reservaExistente) {
@@ -81,11 +81,9 @@ export const confirmReservation = async (req, res) => {
         message: 'Reserva temporal no encontrada'
       });
     }
-
     // Verificar pago con Mercado Pago
     const paymentClient = new Payment(client);
     const payment = await paymentClient.get({ id: paymentId });
-
     if (payment.status !== 'approved') {
       return res.status(400).json({
         status: "error",
@@ -93,23 +91,21 @@ export const confirmReservation = async (req, res) => {
         paymentStatus: payment.status
       });
     }
-
     // Crear reserva confirmada
     const nuevaReserva = await Reservation.create({
+      usuarioId: tempReserva.usuarioId,
       cabaniaId: tempReserva.cabaniaId,
       fechaInicio: tempReserva.fechaInicio,
       fechaFinal: tempReserva.fechaFinal,
       precioTotal: tempReserva.precioTotal,
       estadoReserva: 'confirmada',
-      guestInfo: tempReserva.guestInfo,
+      guestInfo: tempReserva.guestInfo ? tempReserva.guestInfo : null,
       metodoPago: 'mercado_pago',
       paymentId,
       paymentDetails: payment
     });
-
     // Eliminar reserva temporal (opcional, puedes mantenerla con estado)
     await TempReservation.deleteOne({ _id: tempId });
-
     res.status(201).json({
       status: "success",
       reserva: nuevaReserva
@@ -204,7 +200,7 @@ const getAllReservations = async (req, res) => {
   }
 };
 
-export const getUserReservations = async (req, res) => {
+const getUserReservations = async (req, res) => {
   const { userId, cabinId } = req.params;
 
   try {

@@ -1,7 +1,7 @@
 import { Preference, Payment } from 'mercadopago';
 import Reservation from '../models/reservation.js';
 import config from '../config/mercadopago.js';
-import tempReservation from '../models/tempReservation.js';
+import TempReservation from '../models/tempReservation.js';
 
 const client = config;
 
@@ -56,7 +56,7 @@ export const handleWebhook = async (req, res) => {
       return res.status(400).send('Invalid payment data');
     }
 
-    const tempReserva = await tempReservation.findOne({ tempId: payment.external_reference });
+    const tempReserva = await TempReservation.findOne({ tempId: payment.external_reference });
     if (!tempReserva) return res.status(404).send('Temp reservation not found');
 
     if (payment.status === 'approved') {
@@ -75,7 +75,7 @@ export const handleWebhook = async (req, res) => {
     }
 
     // Eliminar siempre la temporal, tanto si aprueba como si rechaza
-    await tempReservation.deleteOne({ tempId: payment.external_reference });
+    await TempReservation.deleteOne({ tempId: payment.external_reference });
 
     res.status(200).send('OK');
   } catch (error) {
@@ -92,7 +92,7 @@ export const getPaymentStatus = async (req, res) => {
       return res.json({ status: "success", estado: "approved" });
     }
 
-    const temp = await tempReservation.findOne({ tempId });
+    const temp = await TempReservation.findOne({ tempId });
     if (temp) {
       return res.json({ status: "success", estado: "pending" });
     }

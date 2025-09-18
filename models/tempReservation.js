@@ -6,6 +6,10 @@ const TempReservationSchema = new Schema({
         ref: 'Cabania',
         required: true
     },
+    usuarioId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
     fechaInicio: {
         type: Date,
         required: true

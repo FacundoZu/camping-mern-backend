@@ -32,9 +32,9 @@ const ReservationSchema = new Schema({
         default: 'pendiente'
     },
     guestInfo: {
-        nombre: String,
-        email: String,
-        telefono: String
+        type: Object,
+        required: false,
+        default: null
     },
     metodoPago: {
         type: String,
