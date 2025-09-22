@@ -23,9 +23,9 @@ const TempReservationSchema = new Schema({
         required: true
     },
     guestInfo: {
-        nombre: String,
-        email: String,
-        telefono: String
+        type: Object,
+        required: false,
+        default: null
     },
     createdAt: {
         type: Date,
@@ -33,7 +33,7 @@ const TempReservationSchema = new Schema({
     },
     expiresAt: {
         type: Date,
-        default: () => new Date(Date.now() + 30 * 60 * 1000) // 30 minutos, luego expira
+        default: () => new Date(Date.now() + 15 * 60 * 1000) // 15 minutos, luego expira
     }
 }, {
     timestamps: false

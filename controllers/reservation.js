@@ -60,7 +60,7 @@ export const tempReservation = async (req, res) => {
   }
 };
 
-const confirmReservation = async (req, res) => {
+export const confirmReservation = async (req, res) => {
   try {
     const { tempId, paymentId } = req.body;
     // Verificar si ya existe una reserva confirmada con este paymentId
@@ -215,6 +215,35 @@ const getUserReservations = async (req, res) => {
   }
 };
 
+const getReservationByPaymentId = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    const reserva = await Reservation.findOne({ paymentId })
+      .populate("cabaniaId")
+      .populate("usuarioId");
+
+    if (!reserva) {
+      return res.status(404).json({
+        status: "error",
+        message: "No se encontró la reserva con ese paymentId"
+      });
+    }
+
+    return res.json({
+      status: "success",
+      reserva
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Error al buscar la reserva",
+      error: error.message
+    });
+  }
+};
+
+
 export default {
   tempReservation,
   confirmReservation,
@@ -222,5 +251,6 @@ export default {
   getReservationsUser,
   getAllReservations,
   getUserReservations,
-  getAllReservationsCabin
+  getAllReservationsCabin,
+  getReservationByPaymentId
 };

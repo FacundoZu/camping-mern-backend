@@ -1,13 +1,17 @@
 import { Router } from "express";
-import { createPreference, handleWebhook, getPaymentStatus } from '../controllers/mercadoPago.js';
+import { createPreference } from '../controllers/mercadoPago.js';
 import { tempReservation } from '../controllers/reservation.js';
+import { webhook } from '../controllers/mercadoPago.js';
+import config from '../config/mercadopago.js';
+
+const client = config;
 
 export const mercadoPagoRouter = Router();
 
 mercadoPagoRouter.post('/create-temp-reservation', tempReservation);
 mercadoPagoRouter.post('/create-preference', createPreference);
-mercadoPagoRouter.all('/webhook', handleWebhook);
-mercadoPagoRouter.get('/status/:tempId', getPaymentStatus);
+mercadoPagoRouter.post('/webhook', webhook);
+
 
 // Rutas de redirección después del pago
 mercadoPagoRouter.get('/success', (req, res) => {
@@ -17,10 +21,10 @@ mercadoPagoRouter.get('/success', (req, res) => {
 
 mercadoPagoRouter.get('/failure', (req, res) => {
   const { payment_id, external_reference } = req.query;
-  res.redirect(`http://localhost:3000/reserva-fallida?payment_id=${payment_id}&tempId=${external_reference}`);
+  res.redirect(`http://localhost:3000/reserva-fallida`);
 });
 
 mercadoPagoRouter.get('/pending', (req, res) => {
   const { payment_id, external_reference } = req.query;
-  res.redirect(`http://localhost:3000/reserva-pendiente?payment_id=${payment_id}&tempId=${external_reference}`);
+  res.redirect(`http://localhost:3000/reserva-pendiente`);
 });

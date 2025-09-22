@@ -1,7 +1,7 @@
-import { Preference, Payment } from 'mercadopago';
-import Reservation from '../models/reservation.js';
+import { Preference } from 'mercadopago';
 import config from '../config/mercadopago.js';
-import TempReservation from '../models/tempReservation.js';
+import { confirmReservation } from './reservation.js';
+
 
 const client = config;
 
@@ -21,7 +21,7 @@ export const createPreference = async (req, res) => {
         failure: `${process.env.FRONT_BASE_URL}/reserva-fallida`,
         pending: `${process.env.FRONT_BASE_URL}/reserva-pendiente`
       },
-      //notification_url: `${process.env.BASE_URL}/MP/webhook`,
+      notification_url: `${process.env.BASE_URL}/MP/webhook`,
       auto_return: "approved",
       redirectMode: "modal",
       external_reference,
@@ -40,66 +40,27 @@ export const createPreference = async (req, res) => {
   }
 };
 
-export const handleWebhook = async (req, res) => {
+export const webhook = async (req, res) => {
   try {
-    const paymentId = req.query.id || req.body.data.id;
-    const topic = req.query.topic || req.body.type;
+    const { type, data } = req.body;
+    // Mercado Pago manda el "type" = "payment" y "data.id" = id del pago
+    if (type === 'payment') {
+      const paymentId = data.id;
 
-    if (!paymentId || topic !== 'payment') {
-      return res.status(400).send('Invalid webhook call');
+      // Consultar el pago en Mercado Pago
+      const payment = await client.payment.get({ id: paymentId });
+
+      if (payment.status === 'approved') {
+        const tempId = payment.external_reference;
+
+        // Confirmar reserva en tu sistema
+        await confirmReservation(tempId, paymentId); // tu lógica del controller
+      }
     }
 
-    const paymentClient = new Payment(client);
-    const payment = await paymentClient.get({ id: paymentId });
-
-    if (!payment || !payment.external_reference) {
-      return res.status(400).send('Invalid payment data');
-    }
-
-    const tempReserva = await TempReservation.findOne({ tempId: payment.external_reference });
-    if (!tempReserva) return res.status(404).send('Temp reservation not found');
-
-    if (payment.status === 'approved') {
-      await Reservation.create({
-        cabaniaId: tempReserva.cabaniaId,
-        fechaInicio: tempReserva.fechaInicio,
-        fechaFinal: tempReserva.fechaFinal,
-        precioTotal: tempReserva.precioTotal,
-        estadoReserva: 'confirmada',
-        guestInfo: tempReserva.guestInfo,
-        metodoPago: 'mercado_pago',
-        paymentId: payment.id,
-        external_reference: payment.external_reference,
-        paymentDetails: payment
-      });
-    }
-
-    // Eliminar siempre la temporal, tanto si aprueba como si rechaza
-    await TempReservation.deleteOne({ tempId: payment.external_reference });
-
-    res.status(200).send('OK');
-  } catch (error) {
-    res.status(500).send('Error');
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('Error en webhook:', err);
+    res.sendStatus(500);
   }
-};
-
-export const getPaymentStatus = async (req, res) => {
-  try {
-    const { tempId } = req.params;
-
-    const reserva = await Reservation.findOne({ external_reference: tempId });
-    if (reserva) {
-      return res.json({ status: "success", estado: "approved" });
-    }
-
-    const temp = await TempReservation.findOne({ tempId });
-    if (temp) {
-      return res.json({ status: "success", estado: "pending" });
-    }
-
-    res.json({ status: "success", estado: "rejected" });
-
-  } catch (error) {
-    res.status(500).json({ status: "error", message: "Error en el servidor" });
-  }
-};
+}
