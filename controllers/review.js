@@ -88,10 +88,10 @@ const updateReview = async (req, res) => {
         if (!review) {
             return res.status(404).json({ success: false, mensaje: "Reseña no encontrada" });
         }
- 
+        
         review.rating = rating;
 
-        if (review.comments && review.comments.length > 0) {
+        if (review.comments) {
             review.comments[0].text = comment;
         } else {
             review.comments = [{ text: comment }];
