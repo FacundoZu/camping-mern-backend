@@ -162,7 +162,7 @@ const forgotpassword = async (req, res) => {
 const validateToken = async (req, res) => {
     try {
         const { token } = req.body
-        
+
         const tokenExist = await Token.findOne({ token })
         if (!tokenExist) {
             const error = new Error('Token no valido')
@@ -203,7 +203,7 @@ const updatePasswordWithToken = async (req, res) => {
         user.password = await user.encryptPassword(password)
         await Promise.allSettled([user.save(), tokenExist.deleteOne()])
 
-        res.status(200).json({success: true})
+        res.status(200).json({ success: true })
     } catch (error) {
         res.status(500).json({ error: 'Hubo un error al crear la cuenta' })
     }
@@ -211,7 +211,7 @@ const updatePasswordWithToken = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const { page = 1, limit = 10, name, email, sortRole } = req.query;
+        const { page = 1, limit = 9, name, email, sortRole } = req.query;
 
         const filtros = {};
 
