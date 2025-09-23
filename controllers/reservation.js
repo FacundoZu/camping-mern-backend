@@ -1,6 +1,7 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import TempReservation from '../models/tempReservation.js';
 import Reservation from '../models/reservation.js';
+import Cabin from '../models/cabin.js';
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -104,6 +105,8 @@ export const confirmReservation = async (req, res) => {
       paymentId,
       paymentDetails: payment
     });
+    // Agrega al array de reservas de la cabaña
+    await Cabin.updateOne({ _id: tempReserva.cabaniaId }, { $push: { reservas: nuevaReserva._id } });
     // Eliminar reserva temporal (opcional, puedes mantenerla con estado)
     await TempReservation.deleteOne({ _id: tempId });
     res.status(201).json({

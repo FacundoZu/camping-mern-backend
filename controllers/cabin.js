@@ -2,7 +2,7 @@ import Cabin from "../models/cabin.js";
 import { deleteFileFromStorage } from "../utils/deleteFile.js";
 import { uploadFile } from '../utils/uploadFile.js'
 import mongoose from "mongoose";
-import { parse } from "date-fns";
+import { endOfDay, parse, startOfDay } from "date-fns";
 import Service from "../models/service.js";
 
 const getCabins = async (req, res) => {
@@ -87,47 +87,32 @@ const getActiveCabins = async (req, res) => {
             };
         }
 
-        // Manejo de fechas
-        const parseDate = (dateString) => parse(dateString, "dd-MM-yyyy", new Date());
+        // Buscar todas las cabañas que cumplen los filtros básicos
+        let cabins = await Cabin.find(filtros)
+            .populate("servicios")
+            .populate("reservas") // aquí traemos las reservas completas con fechas
 
+        // Función auxiliar para parsear fechas
+        const parseDate = (dateString, end = false) => {
+            const date = parse(dateString, "dd-MM-yyyy", new Date());
+            return end ? endOfDay(date) : startOfDay(date);
+        };
+
+        // Si hay fechas, filtrar en memoria
         if (checkIn && checkOut) {
             const fechaInicioDate = parseDate(checkIn);
-            const fechaFinalDate = parseDate(checkOut);
+            const fechaFinalDate = parseDate(checkOut, true);
 
-            filtros.reservas = {
-                $not: {
-                    $elemMatch: {
-                        fechaInicio: { $lte: fechaFinalDate },
-                        fechaFinal: { $gte: fechaInicioDate }
-                    }
-                }
-            };
-        }
-        let cabins;
-
-        if (cantidadPersonas && cantidadPersonas !== "0") {
-            cabins = await Cabin.aggregate([
-                { $match: filtros },
-                {
-                    $addFields: {
-                        prioridad: {
-                            $cond: [
-                                { $eq: ["$cantidadPersonas", Number(cantidadPersonas)] },
-                                0,
-                                1
-                            ]
-                        }
-                    }
-                },
-                { $sort: { prioridad: 1, cantidadPersonas: 1 } }
-            ]);
-
-            // populate después de aggregate
-            cabins = await Cabin.populate(cabins, ["servicios", "reservas"]);
-        } else {
-            cabins = await Cabin.find(filtros)
-                .populate("servicios")
-                .populate("reservas");
+            cabins = cabins.filter(cabin => {
+                if (!cabin.reservas || cabin.reservas.length === 0) return true;
+                const tieneConflicto = cabin.reservas.some(reserva =>
+                    reserva.fechaInicio <= fechaFinalDate &&
+                    reserva.fechaFinal >= fechaInicioDate &&
+                    reserva.estadoReserva !== "cancelada" && // ignoramos canceladas
+                    reserva.estadoReserva !== "rechazada"   // ignoramos rechazadas
+                );
+                return !tieneConflicto; // solo dejamos las libres
+            });
         }
 
         return res.status(200).json({
@@ -142,7 +127,6 @@ const getActiveCabins = async (req, res) => {
         });
     }
 };
-
 
 const getServices = async (req, res) => {
     try {
