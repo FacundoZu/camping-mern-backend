@@ -21,7 +21,7 @@ export const createPreference = async (req, res) => {
         failure: `${process.env.FRONT_BASE_URL}/reserva-fallida`,
         pending: `${process.env.FRONT_BASE_URL}/reserva-pendiente`
       },
-      // notification_url: `${process.env.BASE_URL}/MP/webhook`,
+      notification_url: `${process.env.BASE_URL}/MP/webhook`,
       auto_return: "approved",
       redirectMode: "modal",
       external_reference,

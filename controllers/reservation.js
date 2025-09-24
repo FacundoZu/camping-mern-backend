@@ -64,14 +64,20 @@ export const tempReservation = async (req, res) => {
 export const confirmReservation = async (req, res) => {
   try {
     const { tempId, paymentId } = req.body;
-    // Verificar si ya existe una reserva confirmada con este paymentId
-    const reservaExistente = await Reservation.findOne({ paymentId });
-    if (reservaExistente) {
-      return res.status(200).json({
-        status: "success",
-        reserva: reservaExistente,
-        message: 'Reserva ya confirmada anteriormente'
+    console.log(tempId, paymentId);
+
+    // Verificar si ya existe una reserva confirmada con este paymentId (cuando no es nulo)
+    if (paymentId && paymentId !== 'null') {
+      const reservaExistente = await Reservation.findOne({
+        paymentId: { $eq: paymentId, $ne: null }
       });
+      if (reservaExistente) {
+        return res.status(200).json({
+          status: "success",
+          reserva: reservaExistente,
+          message: 'Reserva ya confirmada anteriormente'
+        });
+      }
     }
 
     // Verificar reserva temporal
@@ -82,39 +88,62 @@ export const confirmReservation = async (req, res) => {
         message: 'Reserva temporal no encontrada'
       });
     }
+
+    let estadoReserva = 'rechazada';
+    let paymentDetails = null;
+    let metodoPago = null;
+
     // Verificar pago con Mercado Pago
-    const paymentClient = new Payment(client);
-    const payment = await paymentClient.get({ id: paymentId });
-    if (payment.status !== 'approved') {
-      return res.status(400).json({
-        status: "error",
-        message: 'Pago no aprobado',
-        paymentStatus: payment.status
-      });
+    if (paymentId && paymentId !== 'null') {
+      try {
+        const paymentClient = new Payment(client);
+        const payment = await paymentClient.get({ id: paymentId });
+        paymentDetails = payment.data;
+        metodoPago = 'mercado_pago';
+
+        // Si el pago está aprobado, confirmamos la reserva
+        if (payment.data.status === 'approved') {
+          estadoReserva = 'confirmada';
+        } else {
+          estadoReserva = 'rechazada';
+        }
+      } catch (err) {
+        console.error("Error obteniendo pago de MercadoPago:", err.message);
+        // Se guarda igualmente como rechazada
+        estadoReserva = 'rechazada';
+      }
     }
-    // Crear reserva confirmada
+
+    // Crear reserva (confirmada o rechazada)
     const nuevaReserva = await Reservation.create({
       usuarioId: tempReserva.usuarioId,
       cabaniaId: tempReserva.cabaniaId,
       fechaInicio: tempReserva.fechaInicio,
       fechaFinal: tempReserva.fechaFinal,
       precioTotal: tempReserva.precioTotal,
-      estadoReserva: 'confirmada',
-      guestInfo: tempReserva.guestInfo ? tempReserva.guestInfo : null,
-      metodoPago: 'mercado_pago',
-      paymentId,
-      paymentDetails: payment
+      estadoReserva,
+      guestInfo: tempReserva.guestInfo || null,
+      metodoPago,
+      paymentId: paymentId !== 'null' ? paymentId : null,
+      paymentDetails
     });
-    // Agrega al array de reservas de la cabaña
-    await Cabin.updateOne({ _id: tempReserva.cabaniaId }, { $push: { reservas: nuevaReserva._id } });
-    // Eliminar reserva temporal (opcional, puedes mantenerla con estado)
+
+    // Agregar al array de reservas de la cabaña
+    await Cabin.updateOne(
+      { _id: tempReserva.cabaniaId },
+      { $push: { reservas: nuevaReserva._id } }
+    );
+
+    // Eliminar reserva temporal
     await TempReservation.deleteOne({ _id: tempId });
+
     res.status(201).json({
       status: "success",
       reserva: nuevaReserva
     });
 
   } catch (error) {
+    console.error("Error confirmando reserva:", error);
     res.status(500).json({
       status: "error",
       message: 'Error al confirmar reserva',

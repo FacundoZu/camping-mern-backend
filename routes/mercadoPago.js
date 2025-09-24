@@ -21,10 +21,10 @@ mercadoPagoRouter.get('/success', (req, res) => {
 
 mercadoPagoRouter.get('/failure', (req, res) => {
   const { payment_id, external_reference } = req.query;
-  res.redirect(`http://localhost:3000/reserva-fallida`);
+  res.redirect(`http://localhost:3000/reserva-fallida?payment_id=${payment_id}&tempId=${external_reference}`);
 });
 
 mercadoPagoRouter.get('/pending', (req, res) => {
   const { payment_id, external_reference } = req.query;
-  res.redirect(`http://localhost:3000/reserva-pendiente`);
+  res.redirect(`http://localhost:3000/reserva-pendiente?payment_id=${payment_id}&tempId=${external_reference}`);
 });

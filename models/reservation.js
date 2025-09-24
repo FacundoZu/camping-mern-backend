@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 
 const ESTADO = ['pendiente', 'confirmada', 'rechazada', 'completada', 'cancelada'];
-const METODO_PAGO = ['mercado_pago', 'transferencia', 'efectivo'];
+const METODO_PAGO = ['mercado_pago', 'transferencia', 'efectivo', null];
 
 const ReservationSchema = new Schema({
     usuarioId: {
@@ -39,14 +39,15 @@ const ReservationSchema = new Schema({
     metodoPago: {
         type: String,
         enum: METODO_PAGO,
-        required: true
+        default: null
     },
     paymentId: {
         type: String,
-        required: true
+        default: null
     },
     paymentDetails: {
-        type: Object // Respuesta de MP aquí
+        type: Object,
+        default: null
     }
 }, {
     timestamps: true
