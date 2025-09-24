@@ -16,20 +16,22 @@ export const tempReservation = async (req, res) => {
     const [reservasExistentes, tempReservas] = await Promise.all([
       Reservation.find({
         cabaniaId,
+        estadoReserva: { $in: ['confirmada', 'pendiente', 'completada'] },
         $or: [
           { fechaInicio: { $lt: new Date(fechaFinal) }, fechaFinal: { $gt: new Date(fechaInicio) } },
-          { fechaInicio: { $gte: new Date(fechaInicio), $lte: new Date(fechaFinal) } }
+          { fechaInicio: { $gte: new Date(fechaInicio), $lte: new Date(fechaFinal) } },
         ]
       }),
       TempReservation.find({
         cabaniaId,
         $or: [
           { fechaInicio: { $lt: new Date(fechaFinal) }, fechaFinal: { $gt: new Date(fechaInicio) } },
-          { fechaInicio: { $gte: new Date(fechaInicio), $lte: new Date(fechaFinal) } }
+          { fechaInicio: { $gte: new Date(fechaInicio), $lte: new Date(fechaFinal) } },
         ],
         expiresAt: { $gt: new Date() }
       })
     ]);
+
     if (reservasExistentes.length > 0 || tempReservas.length > 0) {
       return res.status(400).json({
         status: "error",
@@ -64,7 +66,6 @@ export const tempReservation = async (req, res) => {
 export const confirmReservation = async (req, res) => {
   try {
     const { tempId, paymentId } = req.body;
-    console.log(tempId, paymentId);
 
     // Verificar si ya existe una reserva confirmada con este paymentId (cuando no es nulo)
     if (paymentId && paymentId !== 'null') {
@@ -98,15 +99,9 @@ export const confirmReservation = async (req, res) => {
       try {
         const paymentClient = new Payment(client);
         const payment = await paymentClient.get({ id: paymentId });
-        paymentDetails = payment.data;
+        paymentDetails = payment;
         metodoPago = 'mercado_pago';
-
-        // Si el pago está aprobado, confirmamos la reserva
-        if (payment.data.status === 'approved') {
-          estadoReserva = 'confirmada';
-        } else {
-          estadoReserva = 'rechazada';
-        }
+        estadoReserva = 'confirmada';
       } catch (err) {
         console.error("Error obteniendo pago de MercadoPago:", err.message);
         // Se guarda igualmente como rechazada
@@ -157,17 +152,14 @@ const getReservations = async (req, res) => {
     const cabinId = req.params.id;
     const fechaActual = new Date();
 
-    const fechaDosMesesAtras = new Date();
-    fechaDosMesesAtras.setMonth(fechaActual.getMonth() - 1);
+    const fechaUnMesAtras = new Date();
+    fechaUnMesAtras.setMonth(fechaActual.getMonth() - 1);
 
     const reservas = await Reservation.find({
       cabaniaId: cabinId,
-      $or: [
-        { fechaInicio: { $gte: fechaDosMesesAtras } },
-        { estado: 'activa' }
-      ]
+      fechaInicio: { $gte: fechaUnMesAtras },
+      estadoReserva: 'confirmada'
     });
-
 
     if (!reservas || reservas.length === 0) {
       return res.status(404).json({
