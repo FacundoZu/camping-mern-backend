@@ -7,51 +7,40 @@ import Service from "../models/service.js";
 
 const getCabins = async (req, res) => {
     try {
-        const { checkIn, checkOut, cantidadPersonas, cantidadHabitaciones, cantidadBaños, servicios } = req.query;
+        let { page = 1, limit = 9, nombre, estado } = req.query;
+
+        // Conversión a número seguro
+        page = parseInt(page);
+        limit = parseInt(limit);
+
+        // Filtros básicos
         const filtros = {};
-
-        // Conversión a números
-        if (cantidadPersonas && cantidadPersonas !== "0") {
-            filtros.cantidadPersonas = Number(cantidadPersonas);
+        if (nombre) {
+            filtros.nombre = { $regex: nombre, $options: "i" }; // búsqueda insensible a mayúsculas
         }
-        if (cantidadHabitaciones && cantidadHabitaciones !== "0") {
-            filtros.cantidadHabitaciones = Number(cantidadHabitaciones);
-        }
-        if (cantidadBaños && cantidadBaños !== "0") {
-            filtros.cantidadBaños = Number(cantidadBaños);
+        if (estado) {
+            filtros.estado = estado;
         }
 
-        // Filtro de servicios
-        if (servicios) {
-            const serviciosArray = servicios.split(",");
-            filtros.servicios = {
-                $all: serviciosArray.map(id => new mongoose.Types.ObjectId(id.trim()))
-            };
-        }
+        // Total de cabañas con filtro
+        const total = await Cabin.countDocuments(filtros);
 
-        // Manejo de fechas
-        const parseDate = (dateString) => parse(dateString, "dd-MM-yyyy", new Date());
-
-        if (checkIn && checkOut) {
-            const fechaInicioDate = parseDate(checkIn);
-            const fechaFinalDate = parseDate(checkOut);
-
-            filtros.reservas = {
-                $not: {
-                    $elemMatch: {
-                        fechaInicio: { $lte: fechaFinalDate },
-                        fechaFinal: { $gte: fechaInicioDate }
-                    }
-                }
-            };
-        }
+        // Consulta con paginación
         const cabins = await Cabin.find(filtros)
             .populate("servicios")
-            .populate("reservas");
+            .populate("reservas")
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .sort({ nombre: 1 });
+
         return res.status(200).json({
             success: true,
-            cabins
+            cabins,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
         });
+
     } catch (error) {
         return res.status(500).json({
             success: false,
@@ -60,6 +49,7 @@ const getCabins = async (req, res) => {
         });
     }
 };
+
 
 const getActiveCabins = async (req, res) => {
     try {
