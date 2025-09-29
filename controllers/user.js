@@ -502,9 +502,12 @@ const getUserVisit = async (req, res) => {
         const user = await User.findById(id).populate({
             path: "visitedCabins.cabinId",
             populate: {
-                path: "servicios",
-                model: "Servicio",
+                path: "comentarios",
+                model: "Review",
+                select: "rating",
+                match: { estado: "Habilitado" },
             },
+            select: "imagenPrincipal nombre cantidadPersonas cantidadHabitaciones cantidadBaños",
         });
 
         if (!user) {
