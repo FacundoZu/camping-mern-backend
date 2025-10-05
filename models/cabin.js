@@ -7,7 +7,7 @@ const CabaniaSchema = new Schema({
     nombre: {
         type: String,
         required: true,
-        maxlength: 20
+        maxlength: 40
     },
     imagenPrincipal: {
         type: String,
@@ -73,6 +73,21 @@ const CabaniaSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Review'
     }],
+    ubicacion: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            required: false
+        },
+        direccion: {
+            type: String,
+            required: false
+        }
+    }
 });
 
 CabaniaSchema.statics.getModelos = function () {

@@ -50,7 +50,6 @@ const getCabins = async (req, res) => {
     }
 };
 
-
 const getActiveCabins = async (req, res) => {
     try {
         const { checkIn, checkOut, cantidadPersonas, cantidadHabitaciones, cantidadBaños, servicios } = req.query;
@@ -138,21 +137,68 @@ const getServices = async (req, res) => {
 
 const createCabin = async (req, res) => {
     try {
-        const { nombre, modelo, precio, descripcion, cantidadPersonas, cantidadBaños, cantidadHabitaciones, estado, servicios, minimoDias } = req.body;
-        const newCabin = new Cabin({ nombre, modelo, precio, descripcion, cantidadPersonas, cantidadBaños, cantidadHabitaciones, estado, servicios, minimoDias });
+        // Extraer datos del body
+        const {
+            nombre,
+            modelo,
+            precio,
+            descripcion,
+            cantidadPersonas,
+            cantidadBaños,
+            cantidadHabitaciones,
+            estado,
+            servicios,
+            minimoDias,
+            ubicacion
+        } = req.body;
 
+        // Validaciones simples
+        if (!nombre || !modelo || !precio || !cantidadPersonas || !cantidadBaños || !cantidadHabitaciones) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Faltan campos obligatorios: nombre, modelo, precio o cantidades.'
+            });
+        }
+
+        // Convertir números para evitar errores de Mongoose
+        const parsedPrecio = Number(precio);
+        const parsedCantidadPersonas = Number(cantidadPersonas);
+        const parsedCantidadBaños = Number(cantidadBaños);
+        const parsedCantidadHabitaciones = Number(cantidadHabitaciones);
+        const parsedMinimoDias = minimoDias ? Number(minimoDias) : 1;
+
+        // Construir el objeto de la cabaña
+        const newCabin = new Cabin({
+            nombre,
+            modelo,
+            precio: parsedPrecio,
+            descripcion: descripcion || "",
+            cantidadPersonas: parsedCantidadPersonas,
+            cantidadBaños: parsedCantidadBaños,
+            cantidadHabitaciones: parsedCantidadHabitaciones,
+            estado: estado || 'Disponible',
+            servicios: servicios || [],
+            minimoDias: parsedMinimoDias,
+            ubicacion: ubicacion || null // puede ser null si no se envía
+        });
+
+        // Guardar en la base de datos
         const savedCabin = await newCabin.save();
+
         return res.status(201).json({
             status: 'success',
             cabin: savedCabin
         });
     } catch (error) {
+        console.error("Error al crear la cabaña:", error);
         return res.status(500).json({
+            status: 'error',
             message: "Error al crear la cabaña",
-            error,
+            error: error.message
         });
     }
 };
+
 
 const uploadImageCabin = async (req, res) => {
     try {
