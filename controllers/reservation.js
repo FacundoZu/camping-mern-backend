@@ -208,6 +208,7 @@ const getReservationsUser = async (req, res) => {
     const { usuarioId } = req.params;
     const reservas = await Reservation.find({ usuarioId })
       .populate('cabaniaId')
+      .sort({ fechaInicio: -1 })
       .exec();
     res.status(200).json({ success: true, reservas });
   } catch (error) {
