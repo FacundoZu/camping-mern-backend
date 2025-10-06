@@ -9,6 +9,8 @@ import { reservationRouter } from "./routes/reservation.js";
 import { serviceRouter } from "./routes/service.js";
 import { activityRouter } from "./routes/activity.js";
 import { questionRouter } from "./routes/questions.js";
+import { camperRouter } from "./routes/camper.js";
+
 import { enviarEmailTicket }  from "./mailer.js"
 import { enviarEmailConsulta }  from "./mailer.js"
 
@@ -50,6 +52,7 @@ app.use("/api/activity", activityRouter)
 app.use("/api/question", questionRouter)
 app.use("/api/reviews", reviewRouter)
 app.use("/api/MP", mercadoPagoRouter)
+app.use("/api/camper", camperRouter)
 
 app.post('/api/enviarTicket', (req, res) => {
   const { correoUsuario, detallesReserva } = req.body;
