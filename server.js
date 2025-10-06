@@ -11,16 +11,17 @@ import { activityRouter } from "./routes/activity.js";
 import { questionRouter } from "./routes/questions.js";
 import { camperRouter } from "./routes/camper.js";
 
-import { enviarEmailTicket }  from "./mailer.js"
-import { enviarEmailConsulta }  from "./mailer.js"
+import { enviarEmailTicket } from "./mailer.js"
+import { enviarEmailConsulta } from "./mailer.js"
 
-import './config/passport.js'; 
+import './config/passport.js';
 
-import passport  from "passport";
+import passport from "passport";
 import dotenv from 'dotenv'
 import session from 'express-session'
 import reviewRouter from "./routes/review.js";
 import { mercadoPagoRouter } from "./routes/mercadoPago.js";
+import notificationRouter from "./routes/notifications.js";
 
 console.log("App de node arrancada");
 dotenv.config();
@@ -53,6 +54,7 @@ app.use("/api/question", questionRouter)
 app.use("/api/reviews", reviewRouter)
 app.use("/api/MP", mercadoPagoRouter)
 app.use("/api/camper", camperRouter)
+app.use("/api/notifications", notificationRouter);
 
 app.post('/api/enviarTicket', (req, res) => {
   const { correoUsuario, detallesReserva } = req.body;
@@ -68,5 +70,5 @@ app.post('/api/enviarEmailConsulta', (req, res) => {
 
 const PORT = process.env.PORT ?? 3900;
 app.listen(PORT, () => {
-    console.log("servidor de node corriendo en el puerto: " + PORT)
+  console.log("servidor de node corriendo en el puerto: " + PORT)
 })
