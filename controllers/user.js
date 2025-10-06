@@ -385,7 +385,7 @@ const googleCallback = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 días
     });
 
-    res.redirect('http://localhost:5173/home');
+    res.redirect('http://localhost:5173/');
 };
 
 const editUser = async (req, res) => {
