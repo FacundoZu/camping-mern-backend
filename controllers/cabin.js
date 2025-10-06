@@ -300,7 +300,7 @@ const getCabin = async (req, res) => {
     try {
         const cabin = await Cabin.findById(id)
             .populate('servicios')
-            .select('nombre modelo precio descripcion cantidadPersonas cantidadBaños cantidadHabitaciones estado servicios imagenPrincipal imagenes comentarios minimoDias');
+            .select('nombre modelo precio descripcion cantidadPersonas cantidadBaños cantidadHabitaciones estado servicios imagenPrincipal imagenes comentarios minimoDias ubicacion');
         if (!cabin) {
             return res.status(404).json({ message: 'Cabaña no encontrada' });
         }
