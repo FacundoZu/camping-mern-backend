@@ -147,6 +147,58 @@ export const confirmReservation = async (req, res) => {
   }
 };
 
+export const createCashReservation = async (req, res) => {
+  try {
+    const { cabaniaId, fechaInicio, fechaFinal, guestInfo, metodoPago } = req.body;
+
+    if (!cabaniaId || !fechaInicio || !fechaFinal || !guestInfo) {
+      return res.status(400).json({ message: 'Faltan datos obligatorios.' });
+    }
+
+    // Buscar la cabaña para obtener su precio por noche
+    const cabania = await Cabin.findById(cabaniaId);
+    if (!cabania) {
+      return res.status(404).json({ message: 'Cabaña no encontrada.' });
+    }
+
+    // Calcular cantidad de noches
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFinal);
+    const noches = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+
+    if (noches <= 0) {
+      return res.status(400).json({ message: 'Las fechas seleccionadas no son válidas.' });
+    }
+
+    // Calcular precio total
+    const precioTotal = cabania.precio * noches;
+
+    // Crear la reserva
+    const nuevaReserva = new Reservation({
+      cabaniaId,
+      fechaInicio: inicio,
+      fechaFinal: fin,
+      precioTotal,
+      estadoReserva: 'confirmada',
+      guestInfo,
+      metodoPago,
+      paymentId: null,
+      paymentDetails: null
+    });
+
+    await nuevaReserva.save();
+
+    return res.status(201).json({
+      status: "success",
+      message: 'Reserva creada correctamente, se envio un correo de confirmacion.',
+    });
+
+  } catch (error) {
+    console.error('Error al crear la reserva en efectivo:', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+
 const getReservations = async (req, res) => {
   try {
     const cabinId = req.params.id;
@@ -159,7 +211,7 @@ const getReservations = async (req, res) => {
       cabaniaId: cabinId,
       fechaInicio: { $gte: fechaUnMesAtras },
       estadoReserva: 'confirmada'
-    });
+    }).select("fechaInicio fechaFinal");
 
     if (!reservas || reservas.length === 0) {
       return res.status(404).json({
@@ -272,6 +324,7 @@ const getReservationByPaymentId = async (req, res) => {
 export default {
   tempReservation,
   confirmReservation,
+  createCashReservation,
   getReservations,
   getReservationsUser,
   getAllReservations,

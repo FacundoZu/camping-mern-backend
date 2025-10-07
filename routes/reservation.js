@@ -6,6 +6,7 @@ export const reservationRouter = Router()
 
 reservationRouter.post('/tempReservation', ReservationController.tempReservation);
 reservationRouter.post('/confirmReservation', ReservationController.confirmReservation);
+reservationRouter.post('/createCashReservation', ReservationController.createCashReservation);
 reservationRouter.get('/getReservations/:id', ReservationController.getReservations);
 reservationRouter.get('/getReservationsUser/:usuarioId', ReservationController.getReservationsUser);
 reservationRouter.get('/getAllReservations', authRequire, ReservationController.getAllReservations);
