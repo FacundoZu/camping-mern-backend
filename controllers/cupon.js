@@ -14,7 +14,7 @@ export const createCupon = async (req, res) => {
             discountValue,
             maxUses: maxUses || null,
             expiresAt: expiresAt || null,
-            createdBy: req.user._id
+            createdBy: req.user.id
         });
 
         await cupon.save();
@@ -71,11 +71,13 @@ export const updateCupon = async (req, res) => {
 
 export const changeCuponStatus = async (req, res) => {
     try {
-        const cupon = await Cupon.findByIdAndUpdate(req.params.id, { active: !req.body.active });
+        const cupon = await Cupon.findById(req.params.id);
+        cupon.active = !cupon.active
+        await cupon.save()
         if (!cupon) return res.status(404).json({ message: "Cupón no encontrado" });
-        res.json({ message: "Cupón deshabilitado correctamente" });
+        res.json({ message: "Status actualizado correctamente" });
     } catch (error) {
-        res.status(500).json({ message: "Error al deshabilitar el cupón" });
+        res.status(500).json({ message: "Error al actualizar el cupón" });
     }
 };
 

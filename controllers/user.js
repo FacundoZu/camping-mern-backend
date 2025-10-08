@@ -84,7 +84,7 @@ const login = async (req, res) => {
                 message: "El usuario no se ha autenticado correctamente",
             });
         }
-
+        
         const token = await userSearched.generateJWT();
 
         res.cookie('token', token, {

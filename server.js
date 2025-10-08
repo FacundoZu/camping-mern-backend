@@ -22,6 +22,7 @@ import session from 'express-session'
 import reviewRouter from "./routes/review.js";
 import { mercadoPagoRouter } from "./routes/mercadoPago.js";
 import notificationRouter from "./routes/notifications.js";
+import cuponRouter from "./routes/cupon.js"
 
 console.log("App de node arrancada");
 dotenv.config();
@@ -41,7 +42,6 @@ app.use(session({
   cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
-
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -55,6 +55,7 @@ app.use("/api/reviews", reviewRouter)
 app.use("/api/MP", mercadoPagoRouter)
 app.use("/api/camper", camperRouter)
 app.use("/api/notifications", notificationRouter);
+app.use("/api/cupon", cuponRouter)
 
 app.post('/api/enviarTicket', (req, res) => {
   const { correoUsuario, detallesReserva } = req.body;

@@ -85,6 +85,7 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
 UserSchema.methods.generateJWT = function () {
   const payload = {
     id: this._id,
+    role: this.role,
     iat: moment().unix(),
     exp: moment().add(7, 'days').unix()
   };

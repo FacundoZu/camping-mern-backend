@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const couponSchema = new mongoose.Schema(
+const cuponSchema = new mongoose.Schema(
     {
         code: {
             type: String,
@@ -48,11 +48,10 @@ const couponSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// para verificar si el cupón está vigente
-couponSchema.methods.isValid = function () {
+cuponSchema.methods.isValid = function () {
     const notExpired = !this.expiresAt || this.expiresAt > new Date();
     const underUseLimit = !this.maxUses || this.usedCount < this.maxUses;
     return this.active && notExpired && underUseLimit;
 };
 
-export default mongoose.model("Coupon", couponSchema);
+export default mongoose.model("Cupon", cuponSchema);
