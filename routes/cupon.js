@@ -10,8 +10,8 @@ cuponRouter.get("/", authRequire, adminRequire, cuponController.getCupons);
 cuponRouter.get("/:id", authRequire, adminRequire, cuponController.getCuponById);
 cuponRouter.put("/:id", authRequire, adminRequire, cuponController.updateCupon);
 cuponRouter.delete("/:id", authRequire, adminRequire, cuponController.deleteCupon);
+cuponRouter.post("/validate", cuponController.validateCupon);
 cuponRouter.post("/:id", authRequire, adminRequire, cuponController.changeCuponStatus);
 
-cuponRouter.post("/validate", cuponController.validateCupon);
 
 export default cuponRouter;

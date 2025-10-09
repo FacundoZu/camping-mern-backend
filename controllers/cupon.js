@@ -46,7 +46,6 @@ export const getCuponById = async (req, res) => {
 export const updateCupon = async (req, res) => {
     try {
         const { code, description, discountType, discountValue, maxUses, expiresAt, active } = req.body;
-
         const cupon = await Cupon.findByIdAndUpdate(
             req.params.id,
             {
@@ -97,7 +96,9 @@ export const validateCupon = async (req, res) => {
         const cupon = await Cupon.findOne({ code: code.toUpperCase() });
 
         if (!cupon) return res.status(404).json({ message: "Cupón no encontrado" });
-        if (!cupon.isValid()) return res.status(400).json({ message: "El cupón no es válido o está vencido." });
+        if (!cupon.active) return res.status(400).json({ message: "El cupón no es válido o está vencido." });
+        if (cupon.expiresAt && new Date() > cupon.expiresAt) return res.status(400).json({ message: "El cupón no es válido o está vencido." });
+        if (cupon.maxUses && cupon.usedCount >= cupon.maxUses) return res.status(400).json({ message: "El cupón no es válido o está vencido." });
 
         res.json({
             valid: true,
@@ -105,6 +106,7 @@ export const validateCupon = async (req, res) => {
             discountValue: cupon.discountValue
         });
     } catch (error) {
+        console.log(error)
         res.status(500).json({ message: "Error al validar el cupón" });
     }
 };
