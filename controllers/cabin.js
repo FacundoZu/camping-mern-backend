@@ -2,7 +2,7 @@ import Cabin from "../models/cabin.js";
 import { deleteFileFromStorage } from "../utils/deleteFile.js";
 import { uploadFile } from '../utils/uploadFile.js'
 import mongoose from "mongoose";
-import { endOfDay, parse, startOfDay } from "date-fns";
+import { endOfDay, parse, startOfDay, subDays } from "date-fns";
 import Service from "../models/service.js";
 
 const getCabins = async (req, res) => {
@@ -94,13 +94,20 @@ const getActiveCabins = async (req, res) => {
 
             cabins = cabins.filter(cabin => {
                 if (!cabin.reservas || cabin.reservas.length === 0) return true;
-                const tieneConflicto = cabin.reservas.some(reserva =>
-                    reserva.fechaInicio <= fechaFinalDate &&
-                    reserva.fechaFinal >= fechaInicioDate &&
-                    reserva.estadoReserva !== "cancelada" && // ignoramos canceladas
-                    reserva.estadoReserva !== "rechazada"   // ignoramos rechazadas
-                );
-                return !tieneConflicto; // solo dejamos las libres
+
+                const tieneConflicto = cabin.reservas.some(reserva => {
+                    const inicio = new Date(reserva.fechaInicio);
+                    const fin = new Date(reserva.fechaFinal);
+
+                    return (
+                        inicio <= fechaFinalDate &&
+                        fin >= fechaInicioDate &&
+                        reserva.estadoReserva !== "cancelada" &&
+                        reserva.estadoReserva !== "rechazada"
+                    );
+                });
+
+                return !tieneConflicto;
             });
         }
 
@@ -198,7 +205,6 @@ const createCabin = async (req, res) => {
         });
     }
 };
-
 
 const uploadImageCabin = async (req, res) => {
     try {

@@ -193,6 +193,11 @@ export const createCashReservation = async (req, res) => {
     });
 
     await nuevaReserva.save();
+    
+    await Cabin.updateOne(
+      { _id: cabaniaId },
+      { $push: { reservas: nuevaReserva._id } }
+    );
 
     return res.status(201).json({
       status: "success",
