@@ -2,6 +2,7 @@ import { MercadoPagoConfig, Payment } from 'mercadopago';
 import TempReservation from '../models/tempReservation.js';
 import Reservation from '../models/reservation.js';
 import Cabin from '../models/cabin.js';
+import { incrementUseCount } from './cupon.js';
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -10,7 +11,7 @@ const client = new MercadoPagoConfig({
 
 export const tempReservation = async (req, res) => {
   try {
-    const { cabaniaId, fechaInicio, fechaFinal, precioTotal, guestInfo, usuarioId } = req.body;
+    const { cabaniaId, fechaInicio, fechaFinal, precioTotal, guestInfo, usuarioId, cupon } = req.body;
 
     // Verificar disponibilidad
     const [reservasExistentes, tempReservas] = await Promise.all([
@@ -48,6 +49,11 @@ export const tempReservation = async (req, res) => {
       guestInfo,
       usuarioId
     });
+
+    // Incrementar uso del cupón
+    if (cupon) {
+      await incrementUseCount(cupon);
+    }
 
     res.status(200).json({
       status: "success",

@@ -113,7 +113,7 @@ export const validateCupon = async (req, res) => {
 
 export const incrementUseCount = async (cuponCode) => {
     const cupon = await Cupon.findOne({ code: cuponCode.toUpperCase() });
-    if (cupon) {
+    if (cupon && (cupon.usedCount < cupon.maxUses || cupon.maxUses !== null)) {
         cupon.usedCount += 1;
         await cupon.save();
     }
