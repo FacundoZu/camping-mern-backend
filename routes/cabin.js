@@ -2,6 +2,7 @@ import { Router } from "express"
 import CabinController from "../controllers/cabin.js"
 import { upload } from '../middlewares/upload.js'
 import { authRequire } from "../middlewares/validateToken.js"
+import { gerenteRequire } from "../middlewares/admin.js"
 
 export const cabinRouter = Router()
 
@@ -15,3 +16,4 @@ cabinRouter.get('/opciones', authRequire, CabinController.getOpcionesCabania);
 cabinRouter.put('/update/:id', authRequire, CabinController.updateCabin);
 cabinRouter.put('/cambiarEstado/:id', authRequire, CabinController.changeState);
 cabinRouter.delete('/deleteImage/:id', authRequire, CabinController.deleteImageCabin);
+cabinRouter.put('/regenerateSummary/:id', authRequire, gerenteRequire, CabinController.regenerateCabinSummary);

@@ -2,8 +2,9 @@ import Cabin from "../models/cabin.js";
 import { deleteFileFromStorage } from "../utils/deleteFile.js";
 import { uploadFile } from '../utils/uploadFile.js'
 import mongoose from "mongoose";
-import { endOfDay, parse, startOfDay, subDays } from "date-fns";
+import { endOfDay, parse, startOfDay } from "date-fns";
 import Service from "../models/service.js";
+import openRouterService from "../services/openRouter.js";
 
 const getCabins = async (req, res) => {
     try {
@@ -306,7 +307,7 @@ const getCabin = async (req, res) => {
     try {
         const cabin = await Cabin.findById(id)
             .populate('servicios')
-            .select('nombre modelo precio descripcion cantidadPersonas cantidadBaños cantidadHabitaciones estado servicios imagenPrincipal imagenes comentarios minimoDias ubicacion');
+            .select('nombre modelo precio descripcion cantidadPersonas cantidadBaños cantidadHabitaciones estado servicios imagenPrincipal imagenes comentarios minimoDias ubicacion resumenIa');
         if (!cabin) {
             return res.status(404).json({ message: 'Cabaña no encontrada' });
         }
@@ -363,6 +364,44 @@ const changeState = async (req, res) => {
     }
 };
 
+const regenerateCabinSummary = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Obtener cabaña con comentarios
+        const cabin = await Cabin.findById(id).populate({
+            path: 'comentarios',
+            populate: { path: 'comments', select: 'text' },
+        }).select('comentarios');
+
+
+        if (!cabin) return res.status(404).json({ message: 'Cabaña no encontrada' });
+
+        // Obtener textos de los comentarios
+        const reviews = cabin.comentarios.flatMap(r =>
+            r.comments.map(c => c.text)
+        );
+
+        if (reviews.length === 0)
+            return res.status(400).json({ message: 'No hay comentarios para resumir.' });
+
+        const texto = reviews.slice(-30).join('\n- ');
+        const resumen = await openRouterService.generarResumenComentarios(texto);
+
+        if (resumen) {
+            cabin.resumenIa = resumen;
+            await cabin.save();
+        } else {
+            console.warn('No se generó resumen, se mantiene el anterior.');
+        }
+
+        res.json({ message: 'Resumen generado correctamente', resumen });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error al generar resumen', error: error.message });
+    }
+};
+
 export default {
     getCabins,
     getServices,
@@ -373,5 +412,6 @@ export default {
     getOpcionesCabania,
     updateCabin,
     changeState,
-    deleteImageCabin
+    deleteImageCabin,
+    regenerateCabinSummary
 }

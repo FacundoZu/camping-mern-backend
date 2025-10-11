@@ -87,6 +87,11 @@ const CabaniaSchema = new Schema({
             type: String,
             required: false
         }
+    },
+    resumenIa: {
+        type: String,
+        required: false,
+        default: null
     }
 });
 

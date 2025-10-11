@@ -1,6 +1,31 @@
 import Review from "../models/review.js";
 import Cabania from "../models/cabin.js"
 import Notifications from "../models/notifications.js";
+import openRouterService from "../services/openRouter.js";
+
+async function actualizarResumenCabania(cabinId) {
+    try {
+        const reviews = await Review.find({ cabin: cabinId, estado: 'Habilitado' }).lean();
+
+        const todosLosComentarios = reviews.flatMap(r =>
+            (r.comments || []).map(c => c.text)
+        );
+
+        if (todosLosComentarios.length === 0) {
+            await Cabania.findByIdAndUpdate(cabinId, { resumenIa: null });
+            return;
+        }
+
+        const texto = todosLosComentarios.slice(-30).join('\n- ');
+        const resumen = await openRouterService.generarResumenComentarios(texto);
+
+        if (resumen) {
+            await Cabania.findByIdAndUpdate(cabinId, { resumenIa: resumen });
+        }
+    } catch (error) {
+        console.error('Error al actualizar resumen IA:', error.message);
+    }
+}
 
 const createReview = async (req, res) => {
     try {
@@ -19,7 +44,7 @@ const createReview = async (req, res) => {
         const cabinact = await Cabania.findByIdAndUpdate(cabin, {
             $push: { comentarios: newReview._id }
         });
-        
+
         const savedReview = await newReview.save();
 
         await Notifications.create({
@@ -28,6 +53,8 @@ const createReview = async (req, res) => {
             userId: user,
             cabaniaId: cabinact._id
         });
+
+        actualizarResumenCabania(cabinact._id);
 
         return res.status(201).json({ success: true, mensaje: "Reseña creada exitosamente", review: savedReview });
     } catch (error) {
@@ -106,6 +133,8 @@ const updateReview = async (req, res) => {
         }
 
         await review.save();
+
+        actualizarResumenCabania(review.cabin);
 
         res.status(200).json({ success: true, mensaje: "Reseña actualizada", review });
     } catch (error) {
