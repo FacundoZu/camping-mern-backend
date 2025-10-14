@@ -57,9 +57,9 @@ app.use("/api/camper", camperRouter)
 app.use("/api/notifications", notificationRouter);
 app.use("/api/cupon", cuponRouter)
 
-app.post('/api/enviarTicket', (req, res) => {
+app.post('/api/enviarTicket', async (req, res) => {
   const { correoUsuario, detallesReserva } = req.body;
-  enviarEmailTicket(correoUsuario, detallesReserva);
+  await enviarEmailTicket(correoUsuario, detallesReserva);
   res.json({ success: true });
 });
 

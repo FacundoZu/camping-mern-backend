@@ -3,6 +3,7 @@ import TempReservation from '../models/tempReservation.js';
 import Reservation from '../models/reservation.js';
 import Cabin from '../models/cabin.js';
 import { incrementUseCount } from './cupon.js';
+import { enviarEmailTicket } from '../mailer.js';
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -13,7 +14,6 @@ export const tempReservation = async (req, res) => {
   try {
     const { cabaniaId, fechaInicio, fechaFinal, precioTotal, guestInfo, usuarioId, cupon } = req.body;
 
-    // Verificar disponibilidad
     const [reservasExistentes, tempReservas] = await Promise.all([
       Reservation.find({
         cabaniaId,
@@ -40,7 +40,6 @@ export const tempReservation = async (req, res) => {
       });
     }
 
-    // Crear reserva temporal
     const tempReservation = await TempReservation.create({
       cabaniaId,
       fechaInicio,
@@ -50,7 +49,6 @@ export const tempReservation = async (req, res) => {
       usuarioId
     });
 
-    // Incrementar uso del cupón
     if (cupon) {
       await incrementUseCount(cupon);
     }
@@ -73,7 +71,6 @@ export const confirmReservation = async (req, res) => {
   try {
     const { tempId, paymentId } = req.body;
 
-    // Verificar si ya existe una reserva confirmada con este paymentId (cuando no es nulo)
     if (paymentId && paymentId !== 'null') {
       const reservaExistente = await Reservation.findOne({
         paymentId: { $eq: paymentId, $ne: null }
@@ -87,7 +84,6 @@ export const confirmReservation = async (req, res) => {
       }
     }
 
-    // Verificar reserva temporal
     const tempReserva = await TempReservation.findOne({ _id: tempId });
     if (!tempReserva) {
       return res.status(400).json({
@@ -100,7 +96,6 @@ export const confirmReservation = async (req, res) => {
     let paymentDetails = null;
     let metodoPago = null;
 
-    // Verificar pago con Mercado Pago
     if (paymentId && paymentId !== 'null') {
       try {
         const paymentClient = new Payment(client);
@@ -110,12 +105,10 @@ export const confirmReservation = async (req, res) => {
         estadoReserva = 'confirmada';
       } catch (err) {
         console.error("Error obteniendo pago de MercadoPago:", err.message);
-        // Se guarda igualmente como rechazada
         estadoReserva = 'rechazada';
       }
     }
 
-    // Crear reserva (confirmada o rechazada)
     const nuevaReserva = await Reservation.create({
       usuarioId: tempReserva.usuarioId,
       cabaniaId: tempReserva.cabaniaId,
@@ -129,13 +122,10 @@ export const confirmReservation = async (req, res) => {
       paymentDetails
     });
 
-    // Agregar al array de reservas de la cabaña
     await Cabin.updateOne(
       { _id: tempReserva.cabaniaId },
       { $push: { reservas: nuevaReserva._id } }
     );
-
-    // Eliminar reserva temporal
     await TempReservation.deleteOne({ _id: tempId });
 
     res.status(201).json({
@@ -157,17 +147,14 @@ export const createCashReservation = async (req, res) => {
   try {
     const { cabaniaId, fechaInicio, fechaFinal, guestInfo, metodoPago } = req.body;
 
-    if (!cabaniaId || !fechaInicio || !fechaFinal || !guestInfo) {
+    if (!cabaniaId || !fechaInicio || !fechaFinal || !guestInfo || !guestInfo.email || !guestInfo.nombre || !guestInfo.apellido || !guestInfo.telefono || !guestInfo.documento) {
       return res.status(400).json({ message: 'Faltan datos obligatorios.' });
     }
 
-    // Buscar la cabaña para obtener su precio por noche
     const cabania = await Cabin.findById(cabaniaId);
     if (!cabania) {
       return res.status(404).json({ message: 'Cabaña no encontrada.' });
     }
-
-    // Calcular cantidad de noches
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFinal);
     const noches = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
@@ -176,10 +163,8 @@ export const createCashReservation = async (req, res) => {
       return res.status(400).json({ message: 'Las fechas seleccionadas no son válidas.' });
     }
 
-    // Calcular precio total
     const precioTotal = cabania.precio * noches;
 
-    // Crear la reserva
     const nuevaReserva = new Reservation({
       cabaniaId,
       fechaInicio: inicio,
@@ -198,6 +183,10 @@ export const createCashReservation = async (req, res) => {
       { _id: cabaniaId },
       { $push: { reservas: nuevaReserva._id } }
     );
+
+    const detalleReserva = { fechaInicio, fechaFinal, precioTotal, metodoPago, cabaña: cabania }
+
+    await enviarEmailTicket(guestInfo.email, detalleReserva);
 
     return res.status(201).json({
       status: "success",

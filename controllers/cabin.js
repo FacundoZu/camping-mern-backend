@@ -10,11 +10,9 @@ const getCabins = async (req, res) => {
     try {
         let { page = 1, limit = 9, nombre, estado } = req.query;
 
-        // Conversión a número seguro
         page = parseInt(page);
         limit = parseInt(limit);
 
-        // Filtros básicos
         const filtros = {};
         if (nombre) {
             filtros.nombre = { $regex: nombre, $options: "i" }; // búsqueda insensible a mayúsculas
@@ -23,10 +21,8 @@ const getCabins = async (req, res) => {
             filtros.estado = estado;
         }
 
-        // Total de cabañas con filtro
         const total = await Cabin.countDocuments(filtros);
 
-        // Consulta con paginación
         const cabins = await Cabin.find(filtros)
             .populate("servicios")
             .populate("reservas")
@@ -56,7 +52,6 @@ const getActiveCabins = async (req, res) => {
         const { checkIn, checkOut, cantidadPersonas, cantidadHabitaciones, cantidadBaños, servicios } = req.query;
         const filtros = {};
 
-        // Conversión a números
         if (cantidadPersonas && cantidadPersonas !== "0") {
             filtros.cantidadPersonas = { $gte: Number(cantidadPersonas) };
         }
@@ -69,7 +64,6 @@ const getActiveCabins = async (req, res) => {
 
         filtros.estado = "Disponible";
 
-        // Filtro de servicios
         if (servicios) {
             const serviciosArray = servicios.split(",");
             filtros.servicios = {
@@ -77,18 +71,15 @@ const getActiveCabins = async (req, res) => {
             };
         }
 
-        // Buscar todas las cabañas que cumplen los filtros básicos
         let cabins = await Cabin.find(filtros)
             .populate("servicios")
-            .populate("reservas") // aquí traemos las reservas completas con fechas
+            .populate("reservas")
 
-        // Función auxiliar para parsear fechas
         const parseDate = (dateString, end = false) => {
             const date = parse(dateString, "dd-MM-yyyy", new Date());
             return end ? endOfDay(date) : startOfDay(date);
         };
 
-        // Si hay fechas, filtrar en memoria
         if (checkIn && checkOut) {
             const fechaInicioDate = parseDate(checkIn);
             const fechaFinalDate = parseDate(checkOut, true);
@@ -127,7 +118,6 @@ const getActiveCabins = async (req, res) => {
 
 const getServices = async (req, res) => {
     try {
-        // 1. Traer todos los servicios disponibles
         const services = await Service.find().sort({ nombre: 1 });
 
         return res.status(200).json({
@@ -145,7 +135,6 @@ const getServices = async (req, res) => {
 
 const createCabin = async (req, res) => {
     try {
-        // Extraer datos del body
         const {
             nombre,
             modelo,
@@ -160,7 +149,6 @@ const createCabin = async (req, res) => {
             ubicacion
         } = req.body;
 
-        // Validaciones simples
         if (!nombre || !modelo || !precio || !cantidadPersonas || !cantidadBaños || !cantidadHabitaciones) {
             return res.status(400).json({
                 status: 'error',
@@ -168,14 +156,12 @@ const createCabin = async (req, res) => {
             });
         }
 
-        // Convertir números para evitar errores de Mongoose
         const parsedPrecio = Number(precio);
         const parsedCantidadPersonas = Number(cantidadPersonas);
         const parsedCantidadBaños = Number(cantidadBaños);
         const parsedCantidadHabitaciones = Number(cantidadHabitaciones);
         const parsedMinimoDias = minimoDias ? Number(minimoDias) : 1;
 
-        // Construir el objeto de la cabaña
         const newCabin = new Cabin({
             nombre,
             modelo,
@@ -187,10 +173,9 @@ const createCabin = async (req, res) => {
             estado: estado || 'Disponible',
             servicios: servicios || [],
             minimoDias: parsedMinimoDias,
-            ubicacion: ubicacion || null // puede ser null si no se envía
+            ubicacion: ubicacion || null
         });
 
-        // Guardar en la base de datos
         const savedCabin = await newCabin.save();
 
         return res.status(201).json({
@@ -368,7 +353,6 @@ const regenerateCabinSummary = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Obtener cabaña con comentarios
         const cabin = await Cabin.findById(id).populate({
             path: 'comentarios',
             populate: { path: 'comments', select: 'text' },
@@ -377,7 +361,6 @@ const regenerateCabinSummary = async (req, res) => {
 
         if (!cabin) return res.status(404).json({ message: 'Cabaña no encontrada' });
 
-        // Obtener textos de los comentarios
         const reviews = cabin.comentarios.flatMap(r =>
             r.comments.map(c => c.text)
         );
