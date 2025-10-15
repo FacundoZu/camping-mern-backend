@@ -134,7 +134,7 @@ export const enviarEmailOlvideMiContraseña = (user) => {
         text: 'CampingCachi - Reestablece tu contraseña',
         html: `<p>Hola: ${user.name}, has solicitado reestablecer tu contraseña</p>
                 <p>Visita el siguiente enlace: </p>
-                <a href="${process.env.FRONTEND_URL}/newPassword">Reestablecer Contrseña</a>
+                <a href="${process.env.FRONT_BASE_URL}/newPassword">Reestablecer Contrseña</a>
                 <p>Ingresa el código: <b>${user.token}</b></p>
                 <p>Este token expira en 10 minutos</p>
             `

@@ -90,7 +90,7 @@ const login = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 7 * 24 * 60 * 60 * 1000  // Expiración en 7 días
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         return res.status(200).send({
@@ -178,7 +178,6 @@ const validateToken = async (req, res) => {
 const updatePasswordWithToken = async (req, res) => {
     try {
         const { token, password, password_confirmation } = req.body
-        console.log(req.body)
 
         if (!token || !password || !password_confirmation) {
             const error = new Error('Faltan datos por enviar')
