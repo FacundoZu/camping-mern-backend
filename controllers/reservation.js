@@ -67,6 +67,22 @@ export const tempReservation = async (req, res) => {
   }
 };
 
+export const deleteTempReservation = async (req, res) => {
+  try {
+    const { tempId } = req.body;
+    await TempReservation.deleteOne({ _id: tempId });
+    res.status(200).json({
+      status: "success",
+      message: 'Reserva temporal eliminada correctamente'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: 'Error al eliminar reserva temporal',
+    });
+  }
+};
+
 export const confirmReservation = async (req, res) => {
   try {
     const { tempId, paymentId } = req.body;
@@ -323,6 +339,7 @@ const getReservationByPaymentId = async (req, res) => {
 
 export default {
   tempReservation,
+  deleteTempReservation,
   confirmReservation,
   createCashReservation,
   getReservations,

@@ -5,6 +5,7 @@ import ReservationController from "../controllers/reservation.js"
 export const reservationRouter = Router()
 
 reservationRouter.post('/tempReservation', ReservationController.tempReservation);
+reservationRouter.post('/deleteTempReservation', ReservationController.deleteTempReservation);
 reservationRouter.post('/confirmReservation', ReservationController.confirmReservation);
 reservationRouter.post('/createCashReservation', ReservationController.createCashReservation);
 reservationRouter.get('/getReservations/:id', ReservationController.getReservations);

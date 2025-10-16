@@ -8,7 +8,6 @@ const client = config;
 export const createPreference = async (req, res) => {
   try {
     const { items, payer, external_reference } = req.body;
-
     if (!items || !payer) {
       return res.status(400).json({ status: "error", message: 'Datos incompletos' });
     }
@@ -17,9 +16,9 @@ export const createPreference = async (req, res) => {
       items,
       payer,
       back_urls: {
-        success: `${process.env.FRONT_BASE_URL}/reserva-exitosa`,
-        failure: `${process.env.FRONT_BASE_URL}/reserva-fallida`,
-        pending: `${process.env.FRONT_BASE_URL}/reserva-pendiente`
+        success: `${process.env.FRONT_URL_MP}/reserva-exitosa`,
+        failure: `${process.env.FRONT_URL_MP}/reserva-fallida`,
+        pending: `${process.env.FRONT_URL_MP}/reserva-pendiente`
       },
       // notification_url: `${process.env.BASE_URL}/MP/webhook`,
       auto_return: "approved",
