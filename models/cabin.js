@@ -88,6 +88,10 @@ const CabaniaSchema = new Schema({
             required: false
         }
     },
+    direccion: {
+        type: String,
+        required: false
+    },
     resumenIa: {
         type: String,
         required: false,
