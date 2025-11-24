@@ -138,6 +138,19 @@ export const confirmReservation = async (req, res) => {
       paymentDetails
     });
 
+    let usuario;
+    if (!tempReserva.guestInfo && !tempReserva.guestInfo.email) {
+      usuario = await User.findById(tempReserva.usuarioId);
+    } else {
+      usuario = { email: tempReserva.guestInfo.email };
+    }
+
+    const cabaña = await Cabin.findById(tempReserva.cabaniaId);
+
+    const detalleReserva = { fechaInicio: tempReserva.fechaInicio, fechaFinal: tempReserva.fechaFinal, precioTotal: tempReserva.precioTotal, metodoPago, cabaña }
+
+    await enviarEmailTicket(usuario.email, detalleReserva);
+
     await Cabin.updateOne(
       { _id: tempReserva.cabaniaId },
       { $push: { reservas: nuevaReserva._id } }
@@ -194,7 +207,7 @@ export const createCashReservation = async (req, res) => {
     });
 
     await nuevaReserva.save();
-    
+
     await Cabin.updateOne(
       { _id: cabaniaId },
       { $push: { reservas: nuevaReserva._id } }

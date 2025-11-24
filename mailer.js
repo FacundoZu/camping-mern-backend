@@ -37,7 +37,7 @@ export const enviarEmailTicket = async (correoUsuario, detallesReserva) => {
 
         doc.fontSize(14).fillColor('#4CAF50').text('Detalles de la Cabaña', { align: 'center' }).moveDown(0.5);
         doc.lineWidth(0.5).moveTo(20, doc.y).lineTo(260, doc.y).stroke('#4CAF50').moveDown(1);
-        
+
         doc.fontSize(12).fillColor('#333');
         doc.text(`Nombre: ${cabaña.nombre}`, { align: 'left' }).moveDown(0.5);
         doc.text(`Capacidad: ${cabaña.cantidadPersonas} personas`, { align: 'left' }).moveDown(0.5);
