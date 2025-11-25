@@ -299,8 +299,62 @@ const getReservationsUser = async (req, res) => {
 
 const getAllReservations = async (req, res) => {
   try {
-    const reservations = await Reservation.find().populate('cabaniaId');
-    res.status(200).json({ reservations });
+    const { page = 1, limit = 9, estado, usuario } = req.query;
+
+    const filtros = {};
+
+    if (estado) filtros.estadoReserva = estado;
+
+    // Obtener todas las reservas que coincidan con los filtros
+    let allReservations = await Reservation.find(filtros)
+      .populate('cabaniaId')
+      .populate('usuarioId')
+      .exec();
+
+    // Filtrar por nombre de usuario después del populate si se proporciona
+    if (usuario) {
+      allReservations = allReservations.filter(reserva => {
+        if (reserva.usuarioId) {
+          return reserva.usuarioId.name?.toLowerCase().includes(usuario.toLowerCase());
+        } else if (reserva.guestInfo) {
+          const nombreCompleto = `${reserva.guestInfo.nombre || ''} ${reserva.guestInfo.apellido || ''}`.toLowerCase();
+          return nombreCompleto.includes(usuario.toLowerCase());
+        }
+        return false;
+      });
+    }
+
+    // Ordenar por proximidad a la fecha actual
+    const now = new Date();
+    allReservations.sort((a, b) => {
+      const dateA = new Date(a.fechaInicio);
+      const dateB = new Date(b.fechaInicio);
+
+      // Separar futuras y pasadas
+      const isFutureA = dateA >= now;
+      const isFutureB = dateB >= now;
+
+      // Futuras primero
+      if (isFutureA && !isFutureB) return -1;
+      if (!isFutureA && isFutureB) return 1;
+
+      // Dentro de futuras o pasadas, ordenar por fecha ascendente
+      return dateA - dateB;
+    });
+
+    // Aplicar paginación
+    const totalReservations = allReservations.length;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + Number(limit);
+    const paginatedReservations = allReservations.slice(startIndex, endIndex);
+
+    res.status(200).json({
+      status: 'success',
+      reservations: paginatedReservations,
+      totalReservations,
+      totalPages: Math.ceil(totalReservations / limit),
+      currentPage: Number(page)
+    });
   } catch (error) {
     res.status(500).json({ message: "Error al obtener las reservas" });
   }
@@ -349,6 +403,34 @@ const getReservationByPaymentId = async (req, res) => {
   }
 };
 
+const getReservationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const reserva = await Reservation.findById(id)
+      .populate("cabaniaId")
+      .populate("usuarioId");
+
+    if (!reserva) {
+      return res.status(404).json({
+        status: "error",
+        message: "No se encontró la reserva"
+      });
+    }
+
+    return res.json({
+      status: "success",
+      reserva
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Error al buscar la reserva",
+      error: error.message
+    });
+  }
+};
+
 
 export default {
   tempReservation,
@@ -360,5 +442,6 @@ export default {
   getAllReservations,
   getUserReservations,
   getAllReservationsCabin,
-  getReservationByPaymentId
+  getReservationByPaymentId,
+  getReservationById
 };

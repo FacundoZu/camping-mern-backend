@@ -14,3 +14,4 @@ reservationRouter.get('/getAllReservations', authRequire, ReservationController.
 reservationRouter.get('/getAllReservationsCabin/:id', authRequire, ReservationController.getAllReservationsCabin);
 reservationRouter.get('/getUserReservations/:userId/:cabinId', ReservationController.getUserReservations);
 reservationRouter.get('/byPaymentId/:paymentId', ReservationController.getReservationByPaymentId);
+reservationRouter.get('/getReservation/:id', authRequire, ReservationController.getReservationById);
