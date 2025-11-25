@@ -299,8 +299,43 @@ const getReservationsUser = async (req, res) => {
 
 const getAllReservations = async (req, res) => {
   try {
-    const reservations = await Reservation.find().populate('cabaniaId');
-    res.status(200).json({ reservations });
+    const { page = 1, limit = 9, estado, usuario } = req.query;
+
+    const filtros = {};
+
+    if (estado) filtros.estadoReserva = estado;
+
+    const reservations = await Reservation.find(filtros)
+      .populate('cabaniaId')
+      .populate('usuarioId')
+      .sort({ fechaInicio: 1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .exec();
+
+    // Filtrar por nombre de usuario después del populate si se proporciona
+    let filteredReservations = reservations;
+    if (usuario) {
+      filteredReservations = reservations.filter(reserva => {
+        if (reserva.usuarioId) {
+          return reserva.usuarioId.name?.toLowerCase().includes(usuario.toLowerCase());
+        } else if (reserva.guestInfo) {
+          const nombreCompleto = `${reserva.guestInfo.nombre || ''} ${reserva.guestInfo.apellido || ''}`.toLowerCase();
+          return nombreCompleto.includes(usuario.toLowerCase());
+        }
+        return false;
+      });
+    }
+
+    const totalReservations = await Reservation.countDocuments(filtros);
+
+    res.status(200).json({
+      status: 'success',
+      reservations: filteredReservations,
+      totalReservations,
+      totalPages: Math.ceil(totalReservations / limit),
+      currentPage: Number(page)
+    });
   } catch (error) {
     res.status(500).json({ message: "Error al obtener las reservas" });
   }
@@ -349,6 +384,34 @@ const getReservationByPaymentId = async (req, res) => {
   }
 };
 
+const getReservationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const reserva = await Reservation.findById(id)
+      .populate("cabaniaId")
+      .populate("usuarioId");
+
+    if (!reserva) {
+      return res.status(404).json({
+        status: "error",
+        message: "No se encontró la reserva"
+      });
+    }
+
+    return res.json({
+      status: "success",
+      reserva
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Error al buscar la reserva",
+      error: error.message
+    });
+  }
+};
+
 
 export default {
   tempReservation,
@@ -360,5 +423,6 @@ export default {
   getAllReservations,
   getUserReservations,
   getAllReservationsCabin,
-  getReservationByPaymentId
+  getReservationByPaymentId,
+  getReservationById
 };
